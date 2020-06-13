@@ -1,5 +1,5 @@
 # koa-app-Timing
-由koa创建的注册登录接口，包含了token鉴权
+由koa2创建的Timing接口，包含了token鉴权
 -----
 中间件
 - bcrypt
