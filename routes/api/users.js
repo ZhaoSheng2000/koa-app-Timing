@@ -26,20 +26,21 @@ router.get('/test', async ctx => {
  */
 router.post('/register', async ctx => {
     // console.log(ctx.request.body);
-    const {email, name, password, date} = ctx.request.body;
+    const {email, name, password} = ctx.request.body;
     //存储到数据库
     const findResult = await User.find({email: email});
     if (findResult.length > 0) {
-        ctx.status = 500;
-        ctx.body = {"email": "邮箱已被占用！"}
+        ctx.body = {
+            success: 1,
+            "msg": "邮箱已被占用！"
+        }
     } else {
-        const avatar = gravatar.url(email, {s: '200', r: 'pg', d: 'mm'},'https');
+        const avatar = gravatar.url(email, {s: '200', r: 'pg', d: 'mm'}, 'https');
         const newUser = new User({
             name,
             email,
             password: bcrypt.hashSync(password, 10),
             avatar,
-            date
         });
         // console.log(newUser)
         // 存储到数据库
@@ -52,8 +53,10 @@ router.post('/register', async ctx => {
                 console.log(err)
             });
 
-        //返回json数据
-        ctx.body = newUser;
+        ctx.body = {
+            success: 0,
+            "msg": "success"
+        };
     }
 });
 
@@ -65,24 +68,33 @@ router.post('/register', async ctx => {
  */
 router.post('/login', async ctx => {
     //查询
-    console.log(ctx.request.body);
     const {email, password} = ctx.request.body;
     const findResult = await User.find({email});
     if (findResult.length === 0) {
-        ctx.status = 404;
-        ctx.body = {msg: "用户不存在！"}
+        ctx.status = 200;
+        ctx.body = {
+            success: 1,
+            msg: "用户不存在！"
+        }
     } else {
         const result = bcrypt.compareSync(password, findResult[0].password); // true
         if (result) {
             //返回token
             const payload = {id: findResult[0].id, name: findResult[0].name, avatar: findResult[0].avatar};
-            const token = jwt.sign(payload, keys.secretOrkey, {expiresIn: 3600});
+            const token = jwt.sign(payload, keys.secretOrkey, {expiresIn: 3600 * 24 * 100});
 
             ctx.status = 200;
-            ctx.body = {success: true, token: "Bearer " + token}
+            ctx.body = {
+                success: 0,
+                token: token,
+                userId:findResult[0].id
+            }
         } else {
-            ctx.status = 400;
-            ctx.body = {msg: '密码错误！'}
+            ctx.status = 200;
+            ctx.body = {
+                success: 2,
+                msg: '密码错误！'
+            }
         }
     }
 
@@ -94,16 +106,16 @@ router.post('/login', async ctx => {
  * @access 接口是私密的
  */
 router.get('/current',
-    passport.authenticate('jwt', { session: false }),
+    passport.authenticate('jwt', {session: false}),
     async ctx => {
-    const {_id,name,email,avatar} = ctx.state.user;
-    ctx.body ={
-        _id,
-        name,
-        email,
-        avatar,
-    }
-});
+        const {_id, name, email, avatar} = ctx.state.user;
+        ctx.body = {
+            _id,
+            name,
+            email,
+            avatar,
+        }
+    });
 
 
 module.exports = router.routes();
